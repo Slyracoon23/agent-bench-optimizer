@@ -1,7 +1,40 @@
 import { openai } from '@ai-sdk/openai';
-import { generateText, generateObject, type LanguageModelV1 } from 'ai';
+import { generateText, generateObject, type LanguageModelV1, type Tool } from 'ai';
 import { z } from 'zod';
 import { describe, it } from 'vitest';
+
+/**
+ * Helper function to create a tool with type inference
+ */
+export function tool<T extends z.ZodType>(config: {
+  description: string;
+  parameters: T;
+  execute: (params: z.infer<T>) => Promise<unknown>;
+}): Tool<T> {
+  return config as Tool<T>;
+}
+
+/**
+ * Helper function to generate an object from input using a schema
+ */
+export async function generateFromInput<T extends z.ZodType>({
+  model,
+  input,
+  schema,
+  context = ''
+}: {
+  model: LanguageModelV1;
+  input: string;
+  schema: T;
+  context?: string;
+}): Promise<z.infer<T>> {
+  const result = await generateObject({
+    model,
+    prompt: `${context ? context + '\n' : ''}Given this input: "${input}", generate appropriate parameters:`,
+    schema
+  });
+  return result.object;
+}
 
 /**
  * Options for running an Agent
@@ -10,7 +43,7 @@ export interface AgentOptions {
   /** The input text to process */
   input: string;
   /** Optional tools the agent can use */
-  tools?: Record<string, (...args: any[]) => Promise<any>>;
+  tools?: Record<string, Tool<z.ZodType>>;
 }
 
 /**
@@ -65,11 +98,13 @@ export interface Judge {
 function createTestContext() {
   const agent: Agent = {
     model: openai('gpt-4o-mini'),
-    run: async ({ input }) => {
+    run: async ({ input, tools }) => {
       console.log(`    📝 Input: "${input}"`);
       const result = await generateText({
         model: agent.model,
-        prompt: input
+        prompt: input,
+        tools,
+        maxSteps: 5
       });
       console.log(`    🤖 Response: "${result.text}"`);
       console.log(`    📊 Tokens: ${result.usage.promptTokens} prompt, ${result.usage.completionTokens} completion`);
@@ -92,9 +127,11 @@ function createTestContext() {
           feedback: z.string()
         })
       });
+      
       console.log(`    📈 Overall score: ${evaluation.object.score.toFixed(2)}`);
       console.log(`    🎯 Criteria scores:`, evaluation.object.scores);
       console.log(`    💭 Feedback: ${evaluation.object.feedback}`);
+      
       return evaluation.object;
     }
   };
