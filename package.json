@@ -5,14 +5,19 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "test": "vitest",
-    "prepublish": "pnpm build",
-    "example": "tsx examples/customer-service.ts"
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui",
+    "dev": "vitest",
+    "examples": "vitest examples/customer-service.test.ts",
+    "prepublish": "pnpm run build"
   },
   "devDependencies": {
     "@types/node": "^22.13.5",
     "tsx": "^4.19.3",
     "typescript": "^5.7.3",
+    "vite": "^6.1.1",
     "vitest": "^3.0.6"
   },
   "dependencies": {
@@ -21,5 +26,8 @@
     "dotenv": "^16.4.7",
     "openai": "^4.85.4",
     "zod": "^3.24.2"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }

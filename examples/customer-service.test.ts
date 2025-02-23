@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { benchmark, test, runTests } from '../index';
+import { benchmark, test } from '../index';
 
 // Define and run your benchmarks
 benchmark('Customer Service Agent Tests', () => {
@@ -38,7 +38,4 @@ benchmark('Customer Service Agent Tests', () => {
       professionalism: 0.9
     });
   });
-});
-
-// Run all benchmarks
-runTests().catch(console.error); 
+}); 
