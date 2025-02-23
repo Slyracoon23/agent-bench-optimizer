@@ -23,6 +23,12 @@ const WeatherSchema = z.object({
   conditions: z.string()
 });
 
+// Evaluation schema
+const EvaluationSchema = z.object({
+  passed: z.boolean(),
+  feedback: z.string()
+});
+
 // Define and run your benchmarks
 benchmark('Customer Service Agent Tests', () => {
   const customerServiceSystemPrompt = dedent`
@@ -35,10 +41,11 @@ benchmark('Customer Service Agent Tests', () => {
     Always verify customer information when needed and provide clear next steps.
   `;
 
-  test('handle customer inquiry', async ({ agent, judge }) => {
+  test('handle customer inquiry', async ({ agent }) => {
     const result = await agent.run({
-      systemPrompt: customerServiceSystemPrompt,
-      input: "How can I reset my password?",
+      model: agent.model,
+      system: customerServiceSystemPrompt,
+      prompt: "How can I reset my password?",
       tools: {
         checkUserAccount: tool({
           description: 'Check user account status and last login',
@@ -55,20 +62,25 @@ benchmark('Customer Service Agent Tests', () => {
       }
     });
 
-    await judge.evaluate(
-      result,
-      dedent`
+    const evaluation = await generateObject({
+      model: agent.model,
+      prompt: dedent`
         Given this response to a password reset request: "${result.response}"
 
         Evaluate if the response is clear, secure, and helpful. The response should include specific steps and security considerations. Pass only if it meets these criteria.
-      `
-    );
+      `,
+      schema: EvaluationSchema
+    });
+
+    console.log(`    📈 Passed: ${evaluation.object.passed ? '✅' : '❌'}`);
+    console.log(`    💭 Feedback: ${evaluation.object.feedback}`);
   });
 
-  test('handle product complaint', async ({ agent, judge }) => {
+  test('handle product complaint', async ({ agent }) => {
     const result = await agent.run({
-      systemPrompt: customerServiceSystemPrompt,
-      input: "The product I received is damaged. What should I do?",
+      model: agent.model,
+      system: customerServiceSystemPrompt,
+      prompt: "The product I received is damaged. What should I do?",
       tools: {
         checkOrderHistory: tool({
           description: 'Check customer order history',
@@ -85,9 +97,9 @@ benchmark('Customer Service Agent Tests', () => {
       }
     });
 
-    await judge.evaluate(
-      result,
-      dedent`
+    const evaluation = await generateObject({
+      model: agent.model,
+      prompt: dedent`
         Evaluate this customer service response: "${result.response}"
 
         For a damaged product complaint, check if the response:
@@ -96,14 +108,19 @@ benchmark('Customer Service Agent Tests', () => {
         3) Mentions warranty/guarantee if applicable
 
         Pass only if all criteria are met.
-      `
-    );
+      `,
+      schema: EvaluationSchema
+    });
+
+    console.log(`    📈 Passed: ${evaluation.object.passed ? '✅' : '❌'}`);
+    console.log(`    💭 Feedback: ${evaluation.object.feedback}`);
   });
 
-  test('handle weather inquiry', async ({ agent, judge }) => {
+  test('handle weather inquiry', async ({ agent }) => {
     const result = await agent.run({
-      systemPrompt: customerServiceSystemPrompt,
-      input: "What's the weather in San Francisco?",
+      model: agent.model,
+      system: customerServiceSystemPrompt,
+      prompt: "What's the weather in San Francisco?",
       tools: {
         weather: tool({
           description: 'Get the weather in a location',
@@ -122,9 +139,9 @@ benchmark('Customer Service Agent Tests', () => {
       }
     });
 
-    await judge.evaluate(
-      result,
-      dedent`
+    const evaluation = await generateObject({
+      model: agent.model,
+      prompt: dedent`
         For this weather query response: "${result.response}"
 
         Check if it includes:
@@ -133,7 +150,11 @@ benchmark('Customer Service Agent Tests', () => {
         - Location confirmation
 
         The response should be clear and complete. Pass only if all information is present and well-formatted.
-      `
-    );
+      `,
+      schema: EvaluationSchema
+    });
+
+    console.log(`    📈 Passed: ${evaluation.object.passed ? '✅' : '❌'}`);
+    console.log(`    💭 Feedback: ${evaluation.object.feedback}`);
   });
 }); 

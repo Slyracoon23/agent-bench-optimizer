@@ -1,5 +1,11 @@
 import { openai } from '@ai-sdk/openai';
-import { generateText, generateObject, type LanguageModelV1, type Tool } from 'ai';
+import {
+  generateText,
+  generateObject,
+  type LanguageModelV1,
+  type Tool,
+  type GenerateTextResult,
+} from 'ai';
 import { z } from 'zod';
 import { describe, it } from 'vitest';
 import dedent from 'dedent';
@@ -20,14 +26,7 @@ export function tool<T extends z.ZodType>(config: {
 /**
  * Options for running an Agent
  */
-export interface AgentOptions {
-  /** The input text to process */
-  input: string;
-  /** Optional tools the agent can use */
-  tools?: Record<string, Tool<z.ZodType>>;
-  /** Optional system prompt to guide the agent's behavior */
-  systemPrompt?: string;
-}
+export type AgentOptions = Parameters<typeof generateText>[0];
 
 /**
  * Interface for an AI Agent that wraps a LanguageModelV1
@@ -39,83 +38,31 @@ export interface Agent {
   /**
    * Runs the agent with the given input
    * @param options Configuration for running the agent
-   * @returns Promise resolving to the agent's response
+   * @returns Promise resolving to the complete generateText result
    */
-  run: (options: AgentOptions) => Promise<{
-    /** The final text response from the agent */
-    response: string;
-    /** Usage statistics */
-    usage: {
-      promptTokens: number;
-      completionTokens: number;
-    };
-  }>;
+  run: (options: AgentOptions) => Promise<GenerateTextResult<Record<string, Tool<z.ZodType>>, unknown>>;
 }
 
 /**
- * Interface for evaluating agent responses
- */
-export interface Judge {
-  /**
-   * Evaluates an agent's response
-   * @param result The result from the agent's run
-   * @param evaluationPrompt Custom prompt to guide the evaluation
-   * @returns Promise resolving to evaluation results
-   */
-  evaluate: (
-    result: Awaited<ReturnType<Agent['run']>>,
-    evaluationPrompt: string
-  ) => Promise<{
-    /** Whether the response passed evaluation */
-    passed: boolean;
-    /** Feedback on the response */
-    feedback: string;
-  }>;
-}
-
-/**
- * Creates a test context with Agent and Judge instances
+ * Creates a test context with Agent instance
  */
 function createTestContext() {
   const agent: Agent = {
     model: openai('gpt-4o-mini'),
-    run: async ({ input, tools, systemPrompt }) => {
-      console.log(`    📝 Input: "${input}"`);
+    run: async (options) => {
+      console.log(`    📝 Input: "${options.prompt}"`);
       const result = await generateText({
+        ...options,
         model: agent.model,
-        prompt: input,
-        system: systemPrompt,
-        tools,
-        maxSteps: 5
+        maxSteps: options.maxSteps ?? 5
       });
       console.log(`    🤖 Response: "${result.text}"`);
       console.log(`    📊 Tokens: ${result.usage.promptTokens} prompt, ${result.usage.completionTokens} completion`);
-      return {
-        response: result.text,
-        usage: result.usage
-      };
+      return result;
     }
   };
 
-  const judge: Judge = {
-    evaluate: async (result, evaluationPrompt) => {
-      const evaluation = await generateObject({
-        model: openai('gpt-4o-mini'),
-        prompt: evaluationPrompt,
-        schema: z.object({
-          passed: z.boolean(),
-          feedback: z.string()
-        })
-      });
-      
-      console.log(`    📈 Passed: ${evaluation.object.passed ? '✅' : '❌'}`);
-      console.log(`    💭 Feedback: ${evaluation.object.feedback}`);
-      
-      return evaluation.object;
-    }
-  };
-
-  return { agent, judge };
+  return { agent };
 }
 
 /**
@@ -130,7 +77,7 @@ export function benchmark(name: string, suiteCallback: () => void): void {
  */
 export function test(
   name: string,
-  testCallback: (context: { agent: Agent; judge: Judge }) => Promise<void> | void
+  testCallback: (context: { agent: Agent }) => Promise<void> | void
 ): void {
   it(name, async () => {
     const context = createTestContext();
