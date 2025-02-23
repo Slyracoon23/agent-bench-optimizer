@@ -49,6 +49,7 @@ describe('Customer Service Agent Tests', () => {
       model,
       system: customerServiceSystemPrompt,
       prompt: "How can I reset my password?",
+      maxSteps: 5,
       tools: {
         checkUserAccount: {
           description: 'Check user account status and last login',

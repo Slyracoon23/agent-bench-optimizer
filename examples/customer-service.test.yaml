@@ -1,66 +1,184 @@
-systemPrompt: |
-  You are a helpful and professional customer service agent. Your responses should be:
-  1. Polite and empathetic
-  2. Clear and concise
-  3. Focused on resolving the customer's issue
-  4. Security-conscious when dealing with account-related matters
-  
-  Always verify customer information when needed and provide clear next steps.
+metadata:
+  name: "Customer Service Agent with Grader Benchmarks"
+  version: "1.0"
+  description: "Configuration for testing a customer service agent using data generators, available tools, and an integrated grader."
+  date: "2025-02-23"
 
-tests:
-  - name: handle customer inquiry
+generators:
+  userLastLogin:
+    type: date
+    range:
+      start: "-7 days"
+      end: "now"
+  userStatus:
+    type: list
+    values: ["active", "suspended", "pending"]
+  orderId:
+    type: pattern
+    format: "ORD-{{alphanumeric.length(8)}}"
+  orderStatus:
+    type: list
+    values: ["pending", "shipped", "delivered", "returned"]
+  weatherTemperature:
+    type: number
+    range:
+      min: 32
+      max: 100
+  weatherCondition:
+    type: list
+    values: ["sunny", "partly cloudy", "cloudy", "rainy", "stormy"]
+
+schemas:
+  EvaluationSchema:
+    type: object
+    properties:
+      passed:
+        type: boolean
+      feedback:
+        type: string
+      score:
+        type: integer
+    required:
+      - passed
+      - feedback
+      - score
+
+tools:
+  checkUserAccount:
+    description: "Check user account details"
+    inputSchema:
+      type: object
+      properties:
+        userId:
+          type: string
+    outputSchema:
+      type: object
+      properties:
+        exists:
+          type: boolean
+        lastLogin:
+          type: string
+        status:
+          type: string
+    generate:
+      template:
+        exists: true
+        lastLogin: "{{generators.userLastLogin}}"
+        status: "{{generators.userStatus}}"
+
+  checkOrderHistory:
+    description: "Retrieve customer's last order details"
+    inputSchema:
+      type: object
+      properties:
+        userId:
+          type: string
+    outputSchema:
+      type: object
+      properties:
+        lastOrder:
+          type: object
+          properties:
+            id:
+              type: string
+            date:
+              type: string
+            status:
+              type: string
+    generate:
+      template:
+        lastOrder:
+          id: "{{generators.orderId}}"
+          date: "{{generators.userLastLogin}}"
+          status: "{{generators.orderStatus}}"
+
+  weather:
+    description: "Get weather information for a location"
+    inputSchema:
+      type: object
+      properties:
+        location:
+          type: string
+    outputSchema:
+      type: object
+      properties:
+        location:
+          type: string
+        temperature:
+          type: number
+        conditions:
+          type: string
+    generate:
+      template:
+        location: "{{input.location}}"
+        temperature: "{{generators.weatherTemperature}}"
+        conditions: "{{generators.weatherCondition}}"
+
+agent:
+  systemPrompt: |
+    You are a helpful and professional customer service agent. Your responses should be:
+      1. Polite and empathetic.
+      2. Clear and concise.
+      3. Focused on resolving the customer's issue.
+      4. Security-conscious when handling account details.
+
+    Always verify customer information when needed and provide clear next steps.
+  model: gpt-4o-mini
+
+benchmarks:
+  - name: "Password Reset Inquiry"
     prompt: "How can I reset my password?"
     tools:
-      - name: checkUserAccount
-        description: Check user account status and last login
-        schema:
-          exists: boolean
-          lastLogin: string
-    evaluation:
-      criteria: |
-        Given this response to a password reset request: "{response}"
+      - checkUserAccount
+    judge:
+      evaluationPrompt: |
+        Given the agent's response for the inquiry:
+        {result}
 
-        Evaluate if the response is clear, secure, and helpful. The response should include specific steps and security considerations. Pass only if it meets these criteria.
+        Evaluate the response based on:
+          - Clarity: The response should be easy to understand.
+          - Security: The response must protect sensitive account details.
+          - Helpfulness: The response should offer clear steps for password reset.
+        Pass only if all criteria are met.
+      evaluationSchema: "EvaluationSchema"
+      expected:
+        passed: true
+        score: { min: 80 }
 
-  - name: handle product complaint
+  - name: "Product Complaint Inquiry"
     prompt: "The product I received is damaged. What should I do?"
     tools:
-      - name: checkOrderHistory
-        description: Check customer order history
-        schema:
-          lastOrder:
-            id: string
-            date: string
-            status: string
-    evaluation:
-      criteria: |
-        Evaluate this customer service response: "{response}"
+      - checkOrderHistory
+    judge:
+      evaluationPrompt: |
+        Given the agent's response for the product complaint:
+        {result}
 
-        For a damaged product complaint, check if the response:
-        1) Shows empathy for the customer's situation
-        2) Provides clear return/replacement instructions
-        3) Mentions warranty/guarantee if applicable
-
+        Evaluate the response based on:
+          - Clarity: The response should be clear and concise.
+          - Security: No sensitive order information should be exposed.
+          - Helpfulness: The response should provide actionable next steps for the complaint.
         Pass only if all criteria are met.
+      evaluationSchema: "EvaluationSchema"
+      expected:
+        passed: true
+        score: { min: 80 }
 
-  - name: handle weather inquiry
-    prompt: "What's the weather in San Francisco?"
+  - name: "Weather Inquiry"
+    prompt: "What's the weather like in San Francisco?"
     tools:
-      - name: weather
-        description: Get the weather in a location
-        parameters:
-          location: string
-        schema:
-          location: string
-          temperature: number
-          conditions: string
-    evaluation:
-      criteria: |
-        For this weather query response: "{response}"
+      - weather
+    judge:
+      evaluationPrompt: |
+        Given the agent's response for the weather inquiry:
+        {result}
 
-        Check if it includes:
-        - Temperature
-        - Current conditions
-        - Location confirmation
-
-        The response should be clear and complete. Pass only if all information is present and well-formatted.
+        Evaluate the response based on:
+          - Clarity: The response should be easy to understand.
+          - Accuracy: The weather information must be accurate and complete.
+          - Helpfulness: The response should be informative and useful.
+        Pass only if all criteria are met.
+      evaluationSchema: "EvaluationSchema"
+      expected:
+        passed: true
+        score: { min: 80 }
