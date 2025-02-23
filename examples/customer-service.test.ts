@@ -1,7 +1,9 @@
 import 'dotenv/config';
-import { benchmark, test, tool, dedent } from '../index';
 import { z } from 'zod';
-import { generateObject } from 'ai';
+import { describe, it, expect } from 'vitest';
+import dedent from 'dedent';
+import { openai } from '@ai-sdk/openai';
+import { generateText, generateObject } from 'ai';
 
 // Define schemas for all tool return types
 const UserAccountSchema = z.object({
@@ -29,8 +31,7 @@ const EvaluationSchema = z.object({
   feedback: z.string()
 });
 
-// Define and run your benchmarks
-benchmark('Customer Service Agent Tests', () => {
+describe('Customer Service Agent Tests', () => {
   const customerServiceSystemPrompt = dedent`
     You are a helpful and professional customer service agent. Your responses should be:
     1. Polite and empathetic
@@ -41,120 +42,130 @@ benchmark('Customer Service Agent Tests', () => {
     Always verify customer information when needed and provide clear next steps.
   `;
 
-  test('handle customer inquiry', async ({ agent }) => {
-    const result = await agent.run({
-      model: agent.model,
+  const model = openai('gpt-4o-mini');
+
+  it('handle customer inquiry', async () => {
+    const result = await generateText({
+      model,
       system: customerServiceSystemPrompt,
       prompt: "How can I reset my password?",
       tools: {
-        checkUserAccount: tool({
+        checkUserAccount: {
           description: 'Check user account status and last login',
           parameters: z.object({}),
           execute: async (params) => {
             const response = await generateObject({
-              model: agent.model,
+              model,
               prompt: "Generate a user account status check result",
               schema: UserAccountSchema
             });
             return response.object;
           }
-        })
+        }
       }
     });
 
+    console.log('\n    📊 Complete Result:');
+    console.log(JSON.stringify(result, null, 2).split('\n').map(line => `    ${line}`).join('\n'));
+
     const evaluation = await generateObject({
-      model: agent.model,
+      model,
       prompt: dedent`
-        Given this response to a password reset request: "${result.response}"
+        Given this customer service response result:
+        ${JSON.stringify(result, null, 2)}
 
         Evaluate if the response is clear, secure, and helpful. The response should include specific steps and security considerations. Pass only if it meets these criteria.
       `,
       schema: EvaluationSchema
     });
 
-    console.log(`    📈 Passed: ${evaluation.object.passed ? '✅' : '❌'}`);
-    console.log(`    💭 Feedback: ${evaluation.object.feedback}`);
+    console.log('\n    🤖 Evaluation Result:');
+    console.log(JSON.stringify(evaluation.object, null, 2).split('\n').map(line => `    ${line}`).join('\n'));
+    console.log(`    📈 Final Verdict: ${evaluation.object.passed ? '✅ PASSED' : '❌ FAILED'}`);
+    expect(evaluation.object.passed, evaluation.object.feedback).toBe(true);
   });
 
-  test('handle product complaint', async ({ agent }) => {
-    const result = await agent.run({
-      model: agent.model,
+  it('handle product complaint', async () => {
+    const result = await generateText({
+      model,
       system: customerServiceSystemPrompt,
       prompt: "The product I received is damaged. What should I do?",
       tools: {
-        checkOrderHistory: tool({
+        checkOrderHistory: {
           description: 'Check customer order history',
           parameters: z.object({}),
           execute: async (params) => {
             const response = await generateObject({
-              model: agent.model,
+              model,
               prompt: "Generate an order history check result",
               schema: OrderHistorySchema
             });
             return response.object;
           }
-        })
+        }
       }
     });
 
+    console.log('\n    📊 Complete Result:');
+    console.log(JSON.stringify(result, null, 2).split('\n').map(line => `    ${line}`).join('\n'));
+
     const evaluation = await generateObject({
-      model: agent.model,
+      model,
       prompt: dedent`
-        Evaluate this customer service response: "${result.response}"
+        Given this customer service response result:
+        ${JSON.stringify(result, null, 2)}
 
-        For a damaged product complaint, check if the response:
-        1) Shows empathy for the customer's situation
-        2) Provides clear return/replacement instructions
-        3) Mentions warranty/guarantee if applicable
-
-        Pass only if all criteria are met.
+        Evaluate if the response is clear, secure, and helpful. The response should include specific steps and security considerations. Pass only if it meets these criteria.
       `,
       schema: EvaluationSchema
     });
 
-    console.log(`    📈 Passed: ${evaluation.object.passed ? '✅' : '❌'}`);
-    console.log(`    💭 Feedback: ${evaluation.object.feedback}`);
+    console.log('\n    🤖 Evaluation Result:');
+    console.log(JSON.stringify(evaluation.object, null, 2).split('\n').map(line => `    ${line}`).join('\n'));
+    console.log(`    📈 Final Verdict: ${evaluation.object.passed ? '✅ PASSED' : '❌ FAILED'}`);
+    expect(evaluation.object.passed, evaluation.object.feedback).toBe(true);
   });
 
-  test('handle weather inquiry', async ({ agent }) => {
-    const result = await agent.run({
-      model: agent.model,
+  it('handle weather inquiry', async () => {
+    const result = await generateText({
+      model,
       system: customerServiceSystemPrompt,
       prompt: "What's the weather in San Francisco?",
       tools: {
-        weather: tool({
+        weather: {
           description: 'Get the weather in a location',
           parameters: z.object({
             location: z.string().describe('The location to get the weather for'),
           }),
           execute: async (params) => {
             const response = await generateObject({
-              model: agent.model,
+              model,
               prompt: `Generate weather information for ${params.location}`,
               schema: WeatherSchema
             });
             return response.object;
           }
-        }),
+        }
       }
     });
 
+    console.log('\n    📊 Complete Result:');
+    console.log(JSON.stringify(result, null, 2).split('\n').map(line => `    ${line}`).join('\n'));
+
     const evaluation = await generateObject({
-      model: agent.model,
+      model,
       prompt: dedent`
-        For this weather query response: "${result.response}"
+        Given this customer service response result:
+        ${JSON.stringify(result, null, 2)}
 
-        Check if it includes:
-        - Temperature
-        - Current conditions
-        - Location confirmation
-
-        The response should be clear and complete. Pass only if all information is present and well-formatted.
+        Evaluate if the response is clear, secure, and helpful. The response should include specific steps and security considerations. Pass only if it meets these criteria.
       `,
       schema: EvaluationSchema
     });
 
-    console.log(`    📈 Passed: ${evaluation.object.passed ? '✅' : '❌'}`);
-    console.log(`    💭 Feedback: ${evaluation.object.feedback}`);
+    console.log('\n    🤖 Evaluation Result:');
+    console.log(JSON.stringify(evaluation.object, null, 2).split('\n').map(line => `    ${line}`).join('\n'));
+    console.log(`    📈 Final Verdict: ${evaluation.object.passed ? '✅ PASSED' : '❌ FAILED'}`);
+    expect(evaluation.object.passed, evaluation.object.feedback).toBe(true);
   });
 }); 

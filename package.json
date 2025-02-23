@@ -10,7 +10,7 @@
     "test:coverage": "vitest run --coverage",
     "test:ui": "vitest --ui",
     "dev": "vitest",
-    "examples": "vitest examples/customer-service.test.ts",
+    "examples": "vitest run examples/customer-service.test.ts",
     "prepublish": "pnpm run build"
   },
   "devDependencies": {
