@@ -2,6 +2,9 @@ import { openai } from '@ai-sdk/openai';
 import { generateText, generateObject, type LanguageModelV1, type Tool } from 'ai';
 import { z } from 'zod';
 import { describe, it } from 'vitest';
+import dedent from 'dedent';
+
+export { dedent };
 
 /**
  * Helper function to create a tool with type inference
@@ -15,28 +18,6 @@ export function tool<T extends z.ZodType>(config: {
 }
 
 /**
- * Helper function to generate an object from input using a schema
- */
-export async function generateFromInput<T extends z.ZodType>({
-  model,
-  input,
-  schema,
-  context = ''
-}: {
-  model: LanguageModelV1;
-  input: string;
-  schema: T;
-  context?: string;
-}): Promise<z.infer<T>> {
-  const result = await generateObject({
-    model,
-    prompt: `${context ? context + '\n' : ''}Given this input: "${input}", generate appropriate parameters:`,
-    schema
-  });
-  return result.object;
-}
-
-/**
  * Options for running an Agent
  */
 export interface AgentOptions {
@@ -44,6 +25,8 @@ export interface AgentOptions {
   input: string;
   /** Optional tools the agent can use */
   tools?: Record<string, Tool<z.ZodType>>;
+  /** Optional system prompt to guide the agent's behavior */
+  systemPrompt?: string;
 }
 
 /**
@@ -74,19 +57,17 @@ export interface Agent {
  */
 export interface Judge {
   /**
-   * Evaluates an agent's response against specified criteria
+   * Evaluates an agent's response
    * @param result The result from the agent's run
-   * @param criteria Map of criteria names to target scores (0-1)
+   * @param evaluationPrompt Custom prompt to guide the evaluation
    * @returns Promise resolving to evaluation results
    */
   evaluate: (
     result: Awaited<ReturnType<Agent['run']>>,
-    criteria: Record<string, number>
+    evaluationPrompt: string
   ) => Promise<{
-    /** Overall score (0-1) */
-    score: number;
-    /** Individual criteria scores */
-    scores: Record<string, number>;
+    /** Whether the response passed evaluation */
+    passed: boolean;
     /** Feedback on the response */
     feedback: string;
   }>;
@@ -98,11 +79,12 @@ export interface Judge {
 function createTestContext() {
   const agent: Agent = {
     model: openai('gpt-4o-mini'),
-    run: async ({ input, tools }) => {
+    run: async ({ input, tools, systemPrompt }) => {
       console.log(`    📝 Input: "${input}"`);
       const result = await generateText({
         model: agent.model,
         prompt: input,
+        system: systemPrompt,
         tools,
         maxSteps: 5
       });
@@ -116,20 +98,17 @@ function createTestContext() {
   };
 
   const judge: Judge = {
-    evaluate: async (result, criteria) => {
-      console.log('    ⚖️ Evaluating against criteria:', criteria);
+    evaluate: async (result, evaluationPrompt) => {
       const evaluation = await generateObject({
         model: openai('gpt-4o-mini'),
-        prompt: `Evaluate this response: "${result.response}" against these criteria: ${JSON.stringify(criteria)}`,
+        prompt: evaluationPrompt,
         schema: z.object({
-          score: z.number().min(0).max(1),
-          scores: z.record(z.number().min(0).max(1)),
+          passed: z.boolean(),
           feedback: z.string()
         })
       });
       
-      console.log(`    📈 Overall score: ${evaluation.object.score.toFixed(2)}`);
-      console.log(`    🎯 Criteria scores:`, evaluation.object.scores);
+      console.log(`    📈 Passed: ${evaluation.object.passed ? '✅' : '❌'}`);
       console.log(`    💭 Feedback: ${evaluation.object.feedback}`);
       
       return evaluation.object;
