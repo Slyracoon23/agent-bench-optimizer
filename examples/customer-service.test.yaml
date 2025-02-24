@@ -1,8 +1,51 @@
 metadata:
-  name: "Customer Service Agent with Grader Benchmarks"
-  version: "1.0"
-  description: "Configuration for testing a customer service agent using data generators, available tools, and an integrated grader."
+  name: "Customer Service Agent with Multi-Turn Conversations"
+  version: "1.5"
+  description: "A flexible customer service agent configuration with multi-turn conversations, tool selection control, max step limitation, explicit schema definitions, and data generators."
   date: "2025-02-23"
+
+schemas:
+  EvaluationSchema:
+    type: object
+    properties:
+      passed:
+        type: boolean
+      feedback:
+        type: string
+      score:
+        type: integer
+    required:
+      - passed
+      - feedback
+      - score
+
+  UserAccountSchema:
+    type: object
+    properties:
+      exists:
+        type: boolean
+      lastLogin:
+        type: string
+      status:
+        type: string
+    required:
+      - exists
+      - lastLogin
+      - status
+
+  WeatherSchema:
+    type: object
+    properties:
+      location:
+        type: string
+      temperature:
+        type: number
+      conditions:
+        type: string
+    required:
+      - location
+      - temperature
+      - conditions
 
 generators:
   userLastLogin:
@@ -28,20 +71,16 @@ generators:
     type: list
     values: ["sunny", "partly cloudy", "cloudy", "rainy", "stormy"]
 
-schemas:
-  EvaluationSchema:
-    type: object
-    properties:
-      passed:
-        type: boolean
-      feedback:
-        type: string
-      score:
-        type: integer
-    required:
-      - passed
-      - feedback
-      - score
+agent:
+  model: gpt-4o-mini
+  systemPrompt: |
+    You are a helpful and professional customer service agent. Your responses should be:
+      1. Polite and empathetic.
+      2. Clear and concise.
+      3. Focused on resolving the customer's issue.
+      4. Security-conscious when handling account details.
+  toolChoice: "auto"  # Options: "auto", "none", "required", or { "type": "tool", "toolName": "weather" }
+  maxSteps: 3  # Limits the number of sequential model calls (tool use and responses)
 
 tools:
   checkUserAccount:
@@ -51,46 +90,12 @@ tools:
       properties:
         userId:
           type: string
-    outputSchema:
-      type: object
-      properties:
-        exists:
-          type: boolean
-        lastLogin:
-          type: string
-        status:
-          type: string
+    outputSchema: "UserAccountSchema"
     generate:
       template:
         exists: true
         lastLogin: "{{generators.userLastLogin}}"
         status: "{{generators.userStatus}}"
-
-  checkOrderHistory:
-    description: "Retrieve customer's last order details"
-    inputSchema:
-      type: object
-      properties:
-        userId:
-          type: string
-    outputSchema:
-      type: object
-      properties:
-        lastOrder:
-          type: object
-          properties:
-            id:
-              type: string
-            date:
-              type: string
-            status:
-              type: string
-    generate:
-      template:
-        lastOrder:
-          id: "{{generators.orderId}}"
-          date: "{{generators.userLastLogin}}"
-          status: "{{generators.orderStatus}}"
 
   weather:
     description: "Get weather information for a location"
@@ -99,65 +104,39 @@ tools:
       properties:
         location:
           type: string
-    outputSchema:
-      type: object
-      properties:
-        location:
-          type: string
-        temperature:
-          type: number
-        conditions:
-          type: string
+    outputSchema: "WeatherSchema"
     generate:
       template:
         location: "{{input.location}}"
         temperature: "{{generators.weatherTemperature}}"
         conditions: "{{generators.weatherCondition}}"
 
-agent:
-  systemPrompt: |
-    You are a helpful and professional customer service agent. Your responses should be:
-      1. Polite and empathetic.
-      2. Clear and concise.
-      3. Focused on resolving the customer's issue.
-      4. Security-conscious when handling account details.
-
-    Always verify customer information when needed and provide clear next steps.
-  model: gpt-4o-mini
-
 benchmarks:
   - name: "Password Reset Inquiry"
-    prompt: "How can I reset my password?"
+    seed: 12345
+    messages:
+      - role: "user"
+        content: "How can I reset my password?"
+      - role: "assistant"
+        content: "I can help with that! Can you confirm your email?"
+      - role: "user"
+        content: "user@example.com"
+      - role: "assistant"
+        content: "I have found your account. Do you want to reset via email or phone?"
+      - role: "user"
+        content: "Email, please."
     tools:
       - checkUserAccount
     judge:
       evaluationPrompt: |
-        Given the agent's response for the inquiry:
+        Given the agent's response:
         {result}
 
         Evaluate the response based on:
-          - Clarity: The response should be easy to understand.
-          - Security: The response must protect sensitive account details.
-          - Helpfulness: The response should offer clear steps for password reset.
-        Pass only if all criteria are met.
-      evaluationSchema: "EvaluationSchema"
-      expected:
-        passed: true
-        score: { min: 80 }
-
-  - name: "Product Complaint Inquiry"
-    prompt: "The product I received is damaged. What should I do?"
-    tools:
-      - checkOrderHistory
-    judge:
-      evaluationPrompt: |
-        Given the agent's response for the product complaint:
-        {result}
-
-        Evaluate the response based on:
-          - Clarity: The response should be clear and concise.
-          - Security: No sensitive order information should be exposed.
-          - Helpfulness: The response should provide actionable next steps for the complaint.
+          - Clarity: Should be understandable.
+          - Security: No sensitive account details exposed.
+          - Helpfulness: Must include clear steps for password reset.
+          - Correct flow: Ensure that the assistant asks for email confirmation and provides reset options.
         Pass only if all criteria are met.
       evaluationSchema: "EvaluationSchema"
       expected:
@@ -165,18 +144,28 @@ benchmarks:
         score: { min: 80 }
 
   - name: "Weather Inquiry"
-    prompt: "What's the weather like in San Francisco?"
+    seed: 11111
+    messages:
+      - role: "user"
+        content: "What's the weather like in San Francisco?"
+      - role: "assistant"
+        content: "Let me check that for you."
+      - role: "user"
+        content: "Also, can you tell me if it's expected to rain tomorrow?"
+      - role: "assistant"
+        content: "I'll look up both for you. Just a moment."
     tools:
       - weather
     judge:
       evaluationPrompt: |
-        Given the agent's response for the weather inquiry:
+        Given the agent's response:
         {result}
 
         Evaluate the response based on:
-          - Clarity: The response should be easy to understand.
-          - Accuracy: The weather information must be accurate and complete.
-          - Helpfulness: The response should be informative and useful.
+          - Clarity: Should be easy to understand.
+          - Accuracy: Weather info must be correct.
+          - Helpfulness: Should provide current and forecasted conditions.
+          - Correct flow: The agent should acknowledge both the current weather and the user's follow-up question.
         Pass only if all criteria are met.
       evaluationSchema: "EvaluationSchema"
       expected:
