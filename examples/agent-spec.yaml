@@ -1,0 +1,73 @@
+metadata:
+  name: "Simple Customer Service Agent"
+  version: "1.0"
+  description: "A basic customer service agent for testing"
+  date: "2025-02-24"
+
+schemas:
+  EvaluationSchema:
+    type: object
+    properties:
+      passed:
+        type: boolean
+      feedback:
+        type: string
+      score:
+        type: integer
+    required:
+      - passed
+      - feedback
+      - score
+
+  UserAccountSchema:
+    type: object
+    properties:
+      exists:
+        type: boolean
+      lastLogin:
+        type: string
+      status:
+        type: string
+    required:
+      - exists
+      - lastLogin
+      - status
+
+agent:
+  model: gpt-4o-mini
+  systemPrompt: |
+    You are a helpful customer service agent. Assist users with their inquiries.
+  toolChoice: "auto"
+  maxSteps: 3
+
+tools:
+  checkUserAccount:
+    description: "Check user account details"
+    inputSchema:
+      type: object
+      properties:
+        userId:
+          type: string
+    outputSchema: "UserAccountSchema"
+    generate:
+      template:
+        exists: true
+        lastLogin: "2025-02-20"
+        status: "active"
+
+benchmarks:
+  - name: "Password Reset Test"
+    seed: 12345
+    messages:
+      - role: "user"
+        content: "How do I reset my password?"
+    tools:
+      - checkUserAccount
+    judge:
+      evaluationPrompt: |
+        Evaluate if the response is helpful and clear.
+      evaluationSchema: "EvaluationSchema"
+      expected:
+        passed: true
+        score:
+          min: 70
