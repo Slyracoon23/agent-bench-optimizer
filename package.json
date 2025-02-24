@@ -2,6 +2,7 @@
   "name": "agent-bench",
   "version": "0.1.0",
   "description": "Framework for testing and benchmarking AI agents",
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {

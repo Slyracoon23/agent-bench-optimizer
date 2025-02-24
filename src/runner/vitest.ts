@@ -1,120 +1,136 @@
-import { spawn } from 'child_process';
+import { inspect } from 'node:util';
+import { createVitest } from 'vitest/node';
 import path from 'path';
-import fs from 'fs';
 
 export interface RunOptions {
   watch?: boolean;
   reporter?: string;
   silent?: boolean;
+  systemMessage?: string;
+  context?: Record<string, any>;
 }
 
 export interface RunResult {
   success: boolean;
+  taskResults: Array<{
+    name: string;
+    state: string;
+    duration: number | null;
+    error?: Error;
+  }>;
+  taskErrors: Error[];
   exitCode: number;
-  error?: Error;
+}
+
+// Define a minimal Task interface matching what we expect from Vitest
+interface Task {
+  name: string;
+  state: string;
+  result?: {
+    state: string;
+    duration: number | null;
+    errors?: Error[];
+  };
 }
 
 /**
- * Creates a temporary Vitest config file to ensure tests are properly found
+ * Runs test files using the Vitest API directly
  * 
- * @param testFilePath Path to the test file
- * @returns Path to the temporary config file
- */
-function createTempVitestConfig(testFilePath: string): string {
-  const configContent = `
-  import { defineConfig } from 'vitest/config';
-  
-  export default defineConfig({
-    test: {
-      include: ['${testFilePath.replace(/\\/g, '\\\\')}'],
-      testTimeout: 30000, // Increase timeout to 30 seconds
-      environmentOptions: {
-        // Make sure to load environment variables from .env
-        loadDotenv: true,
-      },
-    }
-  });
-  `;
-  
-  const configPath = path.join(path.dirname(testFilePath), 'vitest.temp.config.js');
-  fs.writeFileSync(configPath, configContent, 'utf8');
-  console.log(`[DEBUG] Created temporary Vitest config at: ${configPath}`);
-  return configPath;
-}
-
-/**
- * Runs the generated test file with Vitest
- * 
- * @param testFilePath Path to the test file
+ * @param testFilePaths Array of paths to test files
  * @param options Run options
  * @returns Result of the test run
  */
-export async function runTests(testFilePath: string, options: RunOptions = {}): Promise<RunResult> {
-  // Create a temporary Vitest config
-  const configPath = createTempVitestConfig(testFilePath);
+export async function runTests(
+  testFilePaths: string | string[],
+  options: RunOptions = {}
+): Promise<RunResult> {
+  const filePaths = Array.isArray(testFilePaths) ? testFilePaths : [testFilePaths];
   
-  // Build vitest args
-  const args = ['run'];
+  // Convert to absolute paths
+  const absolutePaths = filePaths.map(file => path.resolve(file));
   
-  // Add Vitest options
-  if (options.watch) args.push('--watch');
-  if (options.reporter) args.push('--reporter', options.reporter);
-  
-  // Use the config file
-  args.push('-c', configPath);
-  
-  console.log(`[DEBUG] Running Vitest with args: ${args.join(' ')}`);
-  console.log(`[DEBUG] Full command: ${path.resolve('node_modules', '.bin', 'vitest')} ${args.join(' ')}`);
-  console.log(`[DEBUG] Current working directory: ${process.cwd()}`);
-  
-  // Load environment variables from .env
   try {
-    require('dotenv').config();
-    console.log(`[DEBUG] Loaded environment variables from .env`);
+    // Create Vitest instance with minimal configuration that uses the config file
+    const vitest = await createVitest('test', {
+      root: process.cwd(),
+      test: {
+        include: absolutePaths,
+        environment: 'node',
+      },
+    });
+    
+    // Provide context to tests if specified
+    if (options.systemMessage) {
+      // @ts-ignore Type definitions don't match runtime behavior
+      vitest.provide('systemMessage', options.systemMessage);
+    }
+    
+    // Provide additional context values
+    if (options.context) {
+      Object.entries(options.context).forEach(([key, value]) => {
+        // @ts-ignore Type definitions don't match runtime behavior
+        vitest.provide(key, value);
+      });
+    }
+    
+    // Start the tests
+    await vitest.start();
+    
+    // Get the test results
+    const files = vitest.state.getFiles();
+    // @ts-ignore API may have changed or types are incomplete
+    const tasks: Task[] = vitest.state.getTasksWithPath();
+    
+    // Collect errors
+    const taskErrors: Error[] = [];
+    const taskResults = tasks.map((task) => {
+      const result = {
+        name: task.name,
+        state: task.state,
+        duration: task.result?.duration ?? null,
+      };
+      
+      if (task.result?.state === 'fail') {
+        const error = task.result.errors?.[0];
+        if (error) {
+          taskErrors.push(error);
+          return { ...result, error };
+        }
+      }
+      
+      return result;
+    });
+    
+    // Clean up
+    await vitest.close();
+    
+    // Determine success
+    const success = taskErrors.length === 0;
+    
+    if (!options.silent) {
+      if (success) {
+        console.log('✅ All tests passed!');
+      } else {
+        console.error('❌ Tests failed!');
+        taskErrors.forEach(error => {
+          console.error(error);
+        });
+      }
+    }
+    
+    return {
+      success,
+      taskResults,
+      taskErrors,
+      exitCode: 0,
+    };
   } catch (error) {
-    console.error(`[DEBUG] Error loading environment variables:`, error);
+    console.error('Failed to run tests:', error);
+    return {
+      success: false,
+      taskResults: [],
+      taskErrors: [error instanceof Error ? error : new Error(String(error))],
+      exitCode: 1,
+    };
   }
-  
-  return new Promise<RunResult>((resolve) => {
-    const vitestBin = path.resolve('node_modules', '.bin', 'vitest');
-    console.log(`[DEBUG] Vitest binary path exists: ${fs.existsSync(vitestBin)}`);
-    
-    const proc = spawn(vitestBin, args, {
-      stdio: options.silent ? 'ignore' : 'inherit',
-      shell: true,
-      // Pass current environment variables (including OPENAI_API_KEY) to the child process
-      env: { ...process.env },
-    });
-    
-    proc.on('close', (code) => {
-      console.log(`[DEBUG] Vitest process exited with code: ${code}`);
-      
-      // Clean up temp config file
-      if (fs.existsSync(configPath)) {
-        fs.unlinkSync(configPath);
-        console.log(`[DEBUG] Cleaned up temporary Vitest config`);
-      }
-      
-      resolve({
-        success: code === 0,
-        exitCode: code || 0,
-      });
-    });
-    
-    proc.on('error', (error) => {
-      console.error('[DEBUG] Failed to execute Vitest:', error);
-      
-      // Clean up temp config file
-      if (fs.existsSync(configPath)) {
-        fs.unlinkSync(configPath);
-        console.log(`[DEBUG] Cleaned up temporary Vitest config`);
-      }
-      
-      resolve({
-        success: false,
-        exitCode: 1,
-        error,
-      });
-    });
-  });
 }

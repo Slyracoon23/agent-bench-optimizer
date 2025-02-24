@@ -1,10 +1,10 @@
-import { AgentSpec, Tool } from '../schemas/agent-spec';
+import { AgentSpec, Tool } from '@/schemas/agent-spec.js';
 import dedent from 'dedent';
 
 /**
  * Transpiles an agent specification into a Vitest test file
  * 
- * @param spec The parsed agent specification
+ * @param spec The parsed agent specification 
  * @returns Generated TypeScript code for Vitest tests
  */
 export function transpileToVitest(spec: AgentSpec): string {
@@ -98,13 +98,13 @@ function generateSchemas(schemas: Record<string, any>): string {
  */
 function generateTests(spec: AgentSpec): string {
   return spec.benchmarks
-    .map(benchmark => {
+    .map((benchmark: any) => {
       const toolsParam = benchmark.tools && benchmark.tools.length > 0
         ? generateToolsParam(spec.tools, benchmark.tools)
         : '{}';
       
       // Get initial message from the benchmark
-      const initialMessage = benchmark.messages.find(m => m.role === 'user')?.content || '';
+      const initialMessage = benchmark.messages.find((m: any) => m.role === 'user')?.content || '';
       
       return dedent`
         it('${benchmark.name}', async () => {

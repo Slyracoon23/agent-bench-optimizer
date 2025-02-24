@@ -1,7 +1,7 @@
 import { Command } from 'commander';
-import { parseYamlSpec } from '../../parser/yaml';
-import { transpileToVitest } from '../../transpiler/vitest';
-import { runTests } from '../../runner/vitest';
+import { parseYamlSpec } from '@/parser/yaml.js';
+import { transpileToVitest } from '@/transpiler/vitest.js';
+import { runTests } from '@/runner/vitest.js';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';

@@ -1,12 +1,12 @@
 // Main library exports
-export * from './schemas/agent-spec';
-export * from './parser/yaml';
-export * from './transpiler/vitest';
-export * from './runner/vitest';
+export * from './schemas/agent-spec.js';
+export * from './parser/yaml.js';
+export * from './transpiler/vitest.js';
+export * from './runner/vitest.js';
 
-import { parseYamlSpec } from './parser/yaml';
-import { transpileToVitest } from './transpiler/vitest';
-import { runTests, RunOptions, RunResult } from './runner/vitest';
+import { parseYamlSpec } from './parser/yaml.js';
+import { transpileToVitest } from './transpiler/vitest.js';
+import { runTests, RunOptions, RunResult } from './runner/vitest.js';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';

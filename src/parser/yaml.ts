@@ -1,6 +1,6 @@
 import fs from 'fs';
 import yaml from 'js-yaml';
-import { AgentSpecSchema, AgentSpec } from '../schemas/agent-spec';
+import { AgentSpecSchema, AgentSpec } from '@/schemas/agent-spec.js';
 import { z } from 'zod';
 
 /**

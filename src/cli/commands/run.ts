@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { runTests } from '../../runner/vitest';
+import { runTests } from '@/runner/vitest.js';
 import path from 'path';
 
 export function runCommand(program: Command) {
