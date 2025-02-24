@@ -1,0 +1,208 @@
+metadata:
+  name: "Customer Service Agent with Controlled Bad Tools and Error Catching"
+  version: "2.1"
+  description: "Agent configuration with explicit tool-level error handling, including retries, fallbacks, and error catching agents, with probability-based error generation."
+  date: "2025-02-23"
+
+schemas:
+  EvaluationSchema:
+    type: object
+    properties:
+      passed:
+        type: boolean
+      feedback:
+        type: string
+      score:
+        type: integer
+    required:
+      - passed
+      - feedback
+      - score
+
+  UserAccountSchema:
+    type: object
+    properties:
+      exists:
+        type: boolean
+      lastLogin:
+        type: string
+      status:
+        type: string
+    required:
+      - exists
+      - lastLogin
+      - status
+
+  WeatherSchema:
+    type: object
+    properties:
+      location:
+        type: string
+      temperature:
+        type: number
+      conditions:
+        type: string
+    required:
+      - location
+      - temperature
+      - conditions
+
+generators:
+  userLastLogin:
+    type: date
+    range:
+      start: "-7 days"
+      end: "now"
+    throwLogic:
+      probability: 0.2  # 20% chance to throw an error
+      errorType: "RandomDateError"
+      errorMessage: "Failed to generate a valid last login date."
+  userStatus:
+    type: list
+    values: ["active", "suspended", "pending"]
+    throwLogic:
+      probability: 0.5  # 50% chance to throw an error
+      errorType: "InvalidStatusError"
+      errorMessage: "Generated an invalid user status."
+  orderId:
+    type: pattern
+    format: "ORD-{{alphanumeric.length(8)}}"
+    throwLogic:
+      probability: 0.5  # 50% chance of failing
+      errorType: "OrderIdGenerationError"
+      errorMessage: "Failed to generate a valid order ID."
+  weatherTemperature:
+    type: number
+    range:
+      min: 32
+      max: 100
+    throwLogic:
+      probability: 0.1  # 10% chance to fail
+      errorType: "TemperatureError"
+      errorMessage: "Invalid temperature generated."
+  weatherCondition:
+    type: list
+    values: ["sunny", "partly cloudy", "cloudy", "rainy", "stormy"]
+    throwLogic:
+      probability: 0.5  # 50% failure chance
+      errorType: "WeatherConditionError"
+      errorMessage: "Failed to determine weather condition."
+
+agent:
+  model: gpt-4o-mini
+  systemPrompt: |
+    You are a helpful and professional customer service agent. Your responses should be:
+      1. Polite and empathetic.
+      2. Clear and concise.
+      3. Focused on resolving the customer's issue.
+      4. Security-conscious when handling account details.
+  toolChoice: "auto"
+  maxSteps: 3
+
+tools:
+  checkUserAccount:
+    description: "Check user account details"
+    inputSchema:
+      type: object
+      properties:
+        userId:
+          type: string
+    outputSchema: "UserAccountSchema"
+    generate:
+      template:
+        exists: true
+        lastLogin: "{{generators.userLastLogin}}"
+        status: "{{generators.userStatus}}"
+    errorLogic:
+      condition: "{{input.userId == 'unknown'}}"
+      errorType: "AccountNotFoundError"
+      errorMessage: "User account does not exist."
+
+  weather:
+    description: "Get weather information for a location"
+    inputSchema:
+      type: object
+      properties:
+        location:
+          type: string
+    outputSchema: "WeatherSchema"
+    generate:
+      template:
+        location: "{{input.location}}"
+        temperature: "{{generators.weatherTemperature}}"
+        conditions: "{{generators.weatherCondition}}"
+    errorLogic:
+      condition: "{{input.location == 'Unknown City'}}"
+      errorType: "LocationNotFoundError"
+      errorMessage: "Weather data is unavailable for this location."
+
+benchmarks:
+  - name: "Password Reset Inquiry (Bad Tool Test)"
+    seed: 54321
+    messages:
+      - role: "user"
+        content: "How can I reset my password?"
+      - role: "assistant"
+        content: "I can help with that! Can you confirm your email?"
+      - role: "user"
+        content: "user@example.com"
+    tools:
+      - checkUserAccount
+    judge:
+      evaluationPrompt: |
+        Given the agent's response:
+        {result}
+
+        Evaluate the response based on:
+          - Clarity: Should be understandable.
+          - Security: No sensitive account details exposed.
+          - Helpfulness: Must include clear steps for password reset.
+          - Error Recovery: If the tool fails, does the agent handle it properly?
+        Pass only if all criteria are met.
+      evaluationSchema: "EvaluationSchema"
+      expected:
+        passed: true
+        score: { min: 80 }
+    errorHandling:
+      retry: 2
+      fallback: "Sorry, I couldn't verify your account details at this time."
+      expectedError:
+        type: "AccountNotFoundError"
+        message: "User account does not exist."
+      logErrors: true
+      onError: "console.error('Account lookup error:', error.message)"
+      errorCatcher: "AccountErrorAgent"  # Reference to an error catching agent
+
+  - name: "Weather Inquiry (Bad Tool Test)"
+    seed: 98765
+    messages:
+      - role: "user"
+        content: "What's the weather like in San Francisco?"
+      - role: "assistant"
+        content: "Let me check that for you."
+    tools:
+      - weather
+    judge:
+      evaluationPrompt: |
+        Given the agent's response:
+        {result}
+
+        Evaluate the response based on:
+          - Clarity: Should be easy to understand.
+          - Accuracy: Weather info must be correct.
+          - Helpfulness: Should provide temperature and conditions.
+          - Error Recovery: If the tool fails, does the agent handle it properly?
+        Pass only if all criteria are met.
+      evaluationSchema: "EvaluationSchema"
+      expected:
+        passed: true
+        score: { min: 80 }
+    errorHandling:
+      retry: 2
+      fallback: "Sorry, I couldn't fetch the weather information at this time."
+      expectedError:
+        type: "LocationNotFoundError"
+        message: "Weather data is unavailable for this location."
+      logErrors: true
+      onError: "throw new Error('Weather lookup failed due to unknown location');"
+      errorCatcher: "WeatherErrorAgent"  # Reference to an error catching agent
