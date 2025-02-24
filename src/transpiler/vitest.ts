@@ -40,6 +40,13 @@ function generateImports(): string {
     import dedent from 'dedent';
     import { openai } from '@ai-sdk/openai';
     import { generateText, generateObject } from 'ai';
+
+    // Ensure API key is available
+    if (!process.env.OPENAI_API_KEY) {
+      console.error('Error: OPENAI_API_KEY environment variable is not set.');
+      console.error('Please set it in your .env file or environment variables.');
+      process.exit(1);
+    }
   `;
 }
 

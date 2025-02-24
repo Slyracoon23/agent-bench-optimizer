@@ -27,6 +27,11 @@ function createTempVitestConfig(testFilePath: string): string {
   export default defineConfig({
     test: {
       include: ['${testFilePath.replace(/\\/g, '\\\\')}'],
+      testTimeout: 30000, // Increase timeout to 30 seconds
+      environmentOptions: {
+        // Make sure to load environment variables from .env
+        loadDotenv: true,
+      },
     }
   });
   `;
@@ -62,6 +67,14 @@ export async function runTests(testFilePath: string, options: RunOptions = {}): 
   console.log(`[DEBUG] Full command: ${path.resolve('node_modules', '.bin', 'vitest')} ${args.join(' ')}`);
   console.log(`[DEBUG] Current working directory: ${process.cwd()}`);
   
+  // Load environment variables from .env
+  try {
+    require('dotenv').config();
+    console.log(`[DEBUG] Loaded environment variables from .env`);
+  } catch (error) {
+    console.error(`[DEBUG] Error loading environment variables:`, error);
+  }
+  
   return new Promise<RunResult>((resolve) => {
     const vitestBin = path.resolve('node_modules', '.bin', 'vitest');
     console.log(`[DEBUG] Vitest binary path exists: ${fs.existsSync(vitestBin)}`);
@@ -69,6 +82,8 @@ export async function runTests(testFilePath: string, options: RunOptions = {}): 
     const proc = spawn(vitestBin, args, {
       stdio: options.silent ? 'ignore' : 'inherit',
       shell: true,
+      // Pass current environment variables (including OPENAI_API_KEY) to the child process
+      env: { ...process.env },
     });
     
     proc.on('close', (code) => {

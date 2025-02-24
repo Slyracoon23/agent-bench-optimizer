@@ -3,8 +3,16 @@ import { transpileCommand } from './commands/transpile';
 import { runCommand } from './commands/run';
 import { testCommand } from './commands/test';
 import { version } from '../../package.json';
+import 'dotenv/config'; // Load environment variables from .env file
 
 export function run() {
+  // Log whether OPENAI_API_KEY is set (without revealing the actual key)
+  if (process.env.OPENAI_API_KEY) {
+    console.log('OPENAI_API_KEY environment variable is set');
+  } else {
+    console.warn('Warning: OPENAI_API_KEY environment variable is not set');
+  }
+
   const program = new Command();
 
   program
