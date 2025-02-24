@@ -20,6 +20,7 @@ export interface RunResult {
   }>;
   taskErrors: Error[];
   exitCode: number;
+  responseData?: any[];
 }
 
 // Define a minimal Task interface matching what we expect from Vitest
@@ -30,6 +31,9 @@ interface Task {
     state: string;
     duration: number | null;
     errors?: Error[];
+    meta?: {
+      responseData?: any;
+    };
   };
 }
 
@@ -67,6 +71,7 @@ export async function runTests(
     
     // Provide context to tests if specified
     if (options.systemMessage) {
+      console.log('Setting system message for tests...');
       // @ts-ignore Type definitions don't match runtime behavior
       vitest.provide('systemMessage', options.systemMessage);
     }
@@ -87,14 +92,24 @@ export async function runTests(
     // @ts-ignore API may have changed or types are incomplete
     const tasks: Task[] = vitest.state.getTasksWithPath();
     
-    // Collect errors
+    // Collect errors and response data
     const taskErrors: Error[] = [];
+    const responseData: any[] = [];
+    
     const taskResults = tasks.map((task) => {
       const result = {
         name: task.name,
         state: task.state,
         duration: task.result?.duration ?? null,
       };
+      
+      // Collect response data if available
+      if (task.result?.meta?.responseData) {
+        responseData.push({
+          taskName: task.name,
+          data: task.result.meta.responseData
+        });
+      }
       
       if (task.result?.state === 'fail') {
         const error = task.result.errors?.[0];
@@ -129,6 +144,7 @@ export async function runTests(
       taskResults,
       taskErrors,
       exitCode: 0,
+      responseData: responseData.length > 0 ? responseData : undefined
     };
   } catch (error) {
     console.error('Failed to run tests:', error);
@@ -136,7 +152,7 @@ export async function runTests(
       success: false,
       taskResults: [],
       taskErrors: [error instanceof Error ? error : new Error(String(error))],
-      exitCode: 1,
+      exitCode: 1
     };
   }
 }

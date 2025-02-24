@@ -83,6 +83,15 @@ export const AgentSchema = z.object({
   maxSteps: z.number().optional(),
 }).passthrough();
 
+// Schema for optimizer configuration
+export const OptimizerSchema = z.object({
+  model: z.string(),
+  iterations: z.number().default(3),
+  strategy: z.enum(["error_analysis", "completion_analysis"]).default("error_analysis"),
+  feedbackPrompt: z.string().optional(),
+  evaluationMetrics: z.array(z.string()).optional(),
+}).passthrough();
+
 // Main schema for the entire agent specification
 export const AgentSpecSchema = z.object({
   metadata: MetadataSchema,
@@ -91,8 +100,10 @@ export const AgentSpecSchema = z.object({
   agent: AgentSchema,
   tools: z.record(ToolSchema),
   benchmarks: z.array(BenchmarkSchema),
+  optimizer: OptimizerSchema.optional(),
 });
 
 export type AgentSpec = z.infer<typeof AgentSpecSchema>;
 export type Tool = z.infer<typeof ToolSchema>;
 export type Benchmark = z.infer<typeof BenchmarkSchema>;
+export type Optimizer = z.infer<typeof OptimizerSchema>;

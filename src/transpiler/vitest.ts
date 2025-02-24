@@ -18,7 +18,8 @@ export function transpileToVitest(spec: AgentSpec): string {
     ${schemas}
     
     describe('${spec.metadata.name}', () => {
-      const customerServiceSystemPrompt = dedent\`
+      // Get the system message from inject() if provided, otherwise use the one from the spec
+      const systemMessage = inject("systemMessage") ?? dedent\`
         ${spec.agent.systemPrompt.replace(/`/g, '\\`')}
       \`;
       
@@ -36,7 +37,7 @@ function generateImports(): string {
   return dedent`
     import 'dotenv/config';
     import { z } from 'zod';
-    import { describe, it, expect } from 'vitest';
+    import { describe, it, expect, inject } from 'vitest';
     import dedent from 'dedent';
     import { openai } from '@ai-sdk/openai';
     import { generateText, generateObject } from 'ai';
@@ -108,9 +109,16 @@ function generateTests(spec: AgentSpec): string {
       
       return dedent`
         it('${benchmark.name}', async () => {
+          // Create agent with the injected system prompt
+          const agent = {
+            model,
+            systemMessage
+          };
+
+          // Run the agent on the benchmark
           const result = await generateText({
             model,
-            system: customerServiceSystemPrompt,
+            system: systemMessage,
             prompt: ${JSON.stringify(initialMessage)},
             ${spec.agent.maxSteps ? `maxSteps: ${spec.agent.maxSteps},` : ''}
             tools: ${toolsParam}
@@ -118,6 +126,18 @@ function generateTests(spec: AgentSpec): string {
         
           console.log('\\n    📊 Complete Result:');
           console.log(JSON.stringify(result, null, 2).split('\\n').map(line => \`    \${line}\`).join('\\n'));
+          
+          // Store response data for optimizer to analyze
+          const responseData = {
+            prompt: ${JSON.stringify(initialMessage)},
+            response: result,
+            systemMessage
+          };
+          
+          // @ts-expect-error - Custom Vitest API
+          if (typeof __vitest_meta__ !== 'undefined') {
+            __vitest_meta__.responseData = responseData;
+          }
         
           const evaluation = await generateObject({
             model,

@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import { transpileCommand } from './commands/transpile.js';
 import { runCommand } from './commands/run.js';
 import { testCommand } from './commands/test.js';
+import { optimizeCommand } from './commands/optimize.js';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import fs from 'fs';
@@ -31,6 +32,7 @@ export function run() {
   transpileCommand(program);
   runCommand(program);
   testCommand(program);
+  optimizeCommand(program);
 
   program.parse();
 }

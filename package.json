@@ -24,6 +24,7 @@
     "@ai-sdk/openai": "^1.1.13",
     "ai": "^4.1.45",
     "commander": "^13.1.0",
+    "common-tags": "^1.8.2",
     "dedent": "^1.5.3",
     "dotenv": "^16.4.7",
     "js-yaml": "^4.1.0",
@@ -31,6 +32,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@types/common-tags": "^1.8.4",
     "@types/dedent": "^0.7.2",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.13.5",
