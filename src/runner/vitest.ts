@@ -53,10 +53,16 @@ export async function runTests(
     // Create Vitest instance with minimal configuration that uses the config file
     const vitest = await createVitest('test', {
       root: process.cwd(),
+    }, {
       test: {
         include: absolutePaths,
         environment: 'node',
-      },
+        globals: true,
+        // Basic settings
+        watch: options.watch ?? false,
+        reporters: options.reporter ? [options.reporter] : undefined,
+        testTimeout: 10000,
+      }
     });
     
     // Provide context to tests if specified
