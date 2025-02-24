@@ -14,11 +14,10 @@ const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
 const { version } = packageJson;
 
 export function run() {
-  // Log whether OPENAI_API_KEY is set (without revealing the actual key)
-  if (process.env.OPENAI_API_KEY) {
-    console.log('OPENAI_API_KEY environment variable is set');
-  } else {
-    console.warn('Warning: OPENAI_API_KEY environment variable is not set');
+  // Check if OPENAI_API_KEY is set, but only show error if it's not set
+  if (!process.env.OPENAI_API_KEY) {
+    console.error('Error: OPENAI_API_KEY environment variable is not set');
+    process.exit(1);
   }
 
   const program = new Command();
