@@ -1,3 +1,5 @@
 #!/usr/bin/env node
 
-require('../dist/src/cli').run();
+import { run } from '../dist/cli/index.js';
+
+run();

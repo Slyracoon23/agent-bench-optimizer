@@ -25,6 +25,7 @@ out
 *.njsproj
 *.sln
 *.sw?
+.cursor/
 
 # Logs
 logs

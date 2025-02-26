@@ -9,7 +9,7 @@
     "agent-bench": "bin/cli.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && tsc-alias",
     "test": "vitest run",
     "test:watch": "vitest watch",
     "test:coverage": "vitest run --coverage",
@@ -44,6 +44,7 @@
     "@typescript-eslint/parser": "^8.25.0",
     "eslint": "^9.21.0",
     "prettier": "^3.5.2",
+    "tsc-alias": "^1.8.11",
     "tsx": "^4.19.3",
     "typescript": "^5.7.3",
     "vite": "^6.1.1",
