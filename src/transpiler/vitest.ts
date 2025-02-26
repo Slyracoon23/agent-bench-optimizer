@@ -125,7 +125,7 @@ function generateTests(spec: AgentSpec): string {
           });
         
           console.log('\\n    📊 Complete Result:');
-          console.log(JSON.stringify(result, null, 2).split('\\n').map(line => \`    \${line}\`).join('\\n'));
+          console.log(JSON.stringify(result, null, 2));
           
           // Store response data for optimizer to analyze
           const responseData = {
@@ -151,7 +151,7 @@ function generateTests(spec: AgentSpec): string {
           });
         
           console.log('\\n    🤖 Evaluation Result:');
-          console.log(JSON.stringify(evaluation.object, null, 2).split('\\n').map(line => \`    \${line}\`).join('\\n'));
+          console.log(JSON.stringify(evaluation.object, null, 2));
           console.log(\`    📈 Final Verdict: \${evaluation.object.passed ? '✅ PASSED' : '❌ FAILED'}\`);
           
           expect(evaluation.object.passed, evaluation.object.feedback).toBe(true);
