@@ -73,6 +73,13 @@ export async function optimizeAgentSpec(
       
       console.log(`Pass rate: ${passRate.toFixed(2)}% (${passedTasks}/${totalTasks} tasks)`);
       
+      // Log if raw test results were captured
+      if (result.rawTestResults) {
+        console.log('Raw test results captured successfully');
+      } else {
+        console.warn('No raw test results available');
+      }
+      
       // Define the minimum acceptable pass rate (could be configurable)
       const minPassRate = optimizerConfig.minPassRate || 80;
       const passRateSuccess = passRate >= minPassRate;

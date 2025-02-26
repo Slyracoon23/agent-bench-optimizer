@@ -139,14 +139,21 @@ function generateTests(spec: AgentSpec): string {
             __vitest_meta__.responseData = responseData;
           }
         
+          // Generate the evaluation prompt
+          const evaluationPrompt = dedent\`
+            Given this customer service response result:
+            \${JSON.stringify(result, null, 2)}
+      
+            ${benchmark.judge.evaluationPrompt.replace(/\{result\}/g, '${JSON.stringify(result, null, 2)}')}
+          \`;
+          
+          // Log the evaluation prompt for this task
+          console.log('\\n    📝 Grader Evaluation Prompt:');
+          console.log(evaluationPrompt);
+        
           const evaluation = await generateObject({
             model,
-            prompt: dedent\`
-              Given this customer service response result:
-              \${JSON.stringify(result, null, 2)}
-        
-              ${benchmark.judge.evaluationPrompt.replace(/\{result\}/g, '${JSON.stringify(result, null, 2)}')}
-            \`,
+            prompt: evaluationPrompt,
             schema: ${benchmark.judge.evaluationSchema}
           });
         

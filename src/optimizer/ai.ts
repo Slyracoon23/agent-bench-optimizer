@@ -10,17 +10,8 @@ import { generateText } from 'ai';
 const DEFAULT_FEEDBACK_PROMPT = `
 You are an expert AI prompt engineer. Your task is to improve the system prompt for an AI agent based on test results.
 
-# Current System Prompt
-{{currentPrompt}}
-
-# Test Results
-{{testResults}}
-
-# Agent Responses
-{{responseData}}
-
-# Task
-Analyze the test results and the agent's actual responses to identify why the agent failed. 
+# Task 
+Analyze the test results and the agent's actual responses to identify why the agent failed.
 Then, improve the system prompt to address these failures.
 
 Focus on making the system prompt more:
@@ -29,6 +20,21 @@ Focus on making the system prompt more:
 3. Structured with examples if helpful
 
 Return ONLY the improved system prompt. Do not include explanations, just the new prompt text.
+
+# Current System Prompt
+{{currentPrompt}}
+
+# Reference Data
+Below is the data you should analyze to make your improvements:
+
+## Test Results Summary
+{{testResults}}
+
+## Agent Responses
+{{responseData}}
+
+## Raw Test Data
+{{rawTestData}}
 `;
 
 /**
@@ -53,6 +59,9 @@ export async function optimizePromptWithAI(
   // Prepare response data if available
   const responseDataText = formatResponseData(testResult);
   
+  // Get raw test data if available
+  const rawTestData = testResult.rawTestResults || "No raw test data available.";
+  
   // Use the custom feedback prompt if provided, otherwise use the default
   const feedbackPrompt = config.feedbackPrompt || DEFAULT_FEEDBACK_PROMPT;
   
@@ -60,7 +69,13 @@ export async function optimizePromptWithAI(
   const prompt = feedbackPrompt
     .replace('{{currentPrompt}}', currentPrompt)
     .replace('{{testResults}}', testResultsText)
-    .replace('{{responseData}}', responseDataText);
+    .replace('{{responseData}}', responseDataText)
+    .replace('{{rawTestData}}', rawTestData);
+  
+  // Log the generated prompt
+  console.log('\n=== GENERATED OPTIMIZATION PROMPT ===\n');
+  console.log(prompt);
+  console.log('\n======================================\n');
   
   try {
     // Call the AI SDK instead of OpenAI directly
@@ -75,6 +90,11 @@ export async function optimizePromptWithAI(
     
     // Extract the content from the response
     const improvedPrompt = response.text;
+    
+    // Log the AI's response
+    console.log('\n=== AI OPTIMIZATION RESPONSE ===\n');
+    console.log(improvedPrompt);
+    console.log('\n================================\n');
     
     if (!improvedPrompt) {
       console.warn('Warning: AI returned empty response. Using original prompt.');

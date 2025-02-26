@@ -21,6 +21,7 @@ export interface RunResult {
   taskErrors: Error[];
   exitCode: number;
   responseData?: any[];
+  rawTestResults?: string; // Change to string type for the inspected test files data
 }
 
 // Define a minimal Task interface matching what we expect from Vitest
@@ -90,6 +91,14 @@ export async function runTests(
     // Get test files and tasks from Vitest state
     const files = vitest.state.getFiles();
     
+    // Use inspect to capture the full test files data with better handling of circular references
+    const rawTestResults = inspect(files, { 
+      depth: 8, 
+      colors: false, 
+      maxArrayLength: Infinity,
+      maxStringLength: Infinity
+    });
+    
     // Collect errors and response data
     const taskErrors: Error[] = [];
     const responseData: any[] = [];
@@ -158,7 +167,8 @@ export async function runTests(
       taskResults,
       taskErrors,
       exitCode: 0,
-      responseData: responseData.length > 0 ? responseData : undefined
+      responseData: responseData.length > 0 ? responseData : undefined,
+      rawTestResults // Include the inspected test results in the return
     };
   } catch (error) {
     console.error('Failed to run tests:', error);
