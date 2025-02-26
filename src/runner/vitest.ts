@@ -87,35 +87,43 @@ export async function runTests(
     // Start the tests
     await vitest.start();
     
-    // Get the test results
+    // Get test files and tasks from Vitest state
     const files = vitest.state.getFiles();
-    // @ts-ignore API may have changed or types are incomplete
-    const tasks: Task[] = vitest.state.getTasksWithPath();
     
     // Collect errors and response data
     const taskErrors: Error[] = [];
     const responseData: any[] = [];
     
-    const taskResults = tasks.map((task) => {
-      const result = {
-        name: task.name,
-        state: task.state,
-        duration: task.result?.duration ?? null,
-      };
+    // Process test results from files
+    const taskResults = files.map((file) => {
+      // Get tasks from file
+      const tasks = file.tasks || [];
       
-      // Collect response data if available
-      if (task.result?.meta?.responseData) {
+      // Use the file name if it's a single task file, otherwise use unknown
+      const name = file.name;
+      // Use the file result state or unknown
+      const state = file.result?.state ?? 'unknown';
+      const duration = file.result?.duration ?? null;
+      
+      const result = { name, state, duration };
+      
+      // Collect response data if available (using type assertion to access custom properties)
+      const fileResult = file.result as any;
+      if (fileResult?.meta?.responseData) {
         responseData.push({
-          taskName: task.name,
-          data: task.result.meta.responseData
+          taskName: file.name,
+          data: fileResult.meta.responseData
         });
       }
       
-      if (task.result?.state === 'fail') {
-        const error = task.result.errors?.[0];
+      // Collect errors
+      if (file.result?.state === 'fail') {
+        const error = file.result.errors?.[0];
         if (error) {
-          taskErrors.push(error);
-          return { ...result, error };
+          // Ensure error is a proper Error object
+          const properError = error instanceof Error ? error : new Error(String(error));
+          taskErrors.push(properError);
+          return { ...result, error: properError };
         }
       }
       
