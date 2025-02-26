@@ -7,6 +7,8 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import fs from 'fs';
 import 'dotenv/config'; // Load environment variables from .env file
+import figlet from 'figlet';
+import gradient from 'gradient-string';
 
 // Read version from package.json since direct imports are problematic in ES modules
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -14,12 +16,32 @@ const packageJsonPath = path.resolve(__dirname, '../../package.json');
 const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
 const { version } = packageJson;
 
+/**
+ * Displays ASCII art banner for agent-bench
+ */
+function displayBanner() {
+  const asciiArt = figlet.textSync('agent-bench', {
+    font: 'Standard',
+    horizontalLayout: 'default',
+    verticalLayout: 'default',
+  });
+  
+  // Apply a cool gradient to the ASCII art
+  const coloredAsciiArt = gradient(['#FF5733', '#C70039', '#900C3F', '#581845'])(asciiArt);
+  
+  console.log(coloredAsciiArt);
+  console.log(`v${version} - Framework for testing and benchmarking AI agents\n`);
+}
+
 export function run() {
   // Check if OPENAI_API_KEY is set, but only show error if it's not set
   if (!process.env.OPENAI_API_KEY) {
     console.error('Error: OPENAI_API_KEY environment variable is not set');
     process.exit(1);
   }
+
+  // Display the ASCII art banner
+  displayBanner();
 
   const program = new Command();
 
