@@ -144,7 +144,13 @@ function formatTestResults(result: RunResult, strategy: string): string {
 function formatErrorAnalysis(result: RunResult): string {
   const { success, taskResults, taskErrors } = result;
   
-  let output = `Overall test success: ${success ? 'PASSED' : 'FAILED'}\n\n`;
+  // Calculate pass rate
+  const totalTasks = taskResults.length;
+  const passedTasks = taskResults.filter(task => task.state === 'pass').length;
+  const passRate = totalTasks > 0 ? (passedTasks / totalTasks) * 100 : 0;
+  
+  let output = `Overall test success: ${success ? 'PASSED' : 'FAILED'}\n`;
+  output += `Pass rate: ${passRate.toFixed(2)}% (${passedTasks}/${totalTasks} tasks)\n\n`;
   
   // Add task results
   output += 'Task Results:\n';

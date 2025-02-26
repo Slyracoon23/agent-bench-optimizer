@@ -16,6 +16,7 @@ export function optimizeCommand(program: Command) {
     .option('-s, --strategy <strategy>', 'Optimization strategy (error_analysis, completion_analysis)', 'error_analysis')
     .option('-o, --output <path>', 'Path to save the optimized specification')
     .option('-f, --feedback <prompt>', 'Custom feedback prompt for the optimizer')
+    .option('-r, --min-pass-rate <rate>', 'Minimum pass rate percentage to consider optimization successful', '80')
     .action(async (specPath, options) => {
       try {
         // Resolve input path
@@ -36,6 +37,7 @@ export function optimizeCommand(program: Command) {
           iterations: parseInt(options.iterations) || parsedSpec.optimizer?.iterations || 3,
           strategy: (options.strategy as any) || parsedSpec.optimizer?.strategy || 'error_analysis',
           feedbackPrompt: options.feedback || parsedSpec.optimizer?.feedbackPrompt,
+          minPassRate: parseInt(options.minPassRate) || parsedSpec.optimizer?.minPassRate || 80,
         };
         
         console.log(`Using model: ${optimizerConfig.model}`);

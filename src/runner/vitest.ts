@@ -133,12 +133,18 @@ export async function runTests(
     // Clean up
     await vitest.close();
     
-    // Determine success
+    // Determine success based on task errors
+    // Note: This is a minimal success condition - the actual pass rate can be calculated by consumers
     const success = taskErrors.length === 0;
     
     if (!options.silent) {
       if (success) {
-        console.log('✅ All tests passed!');
+        console.log('✅ All tests successfully completed (no errors thrown)');
+        // Calculate pass rate for display
+        const totalTasks = taskResults.length;
+        const passedTasks = taskResults.filter(task => task.state === 'pass').length;
+        const passRate = totalTasks > 0 ? (passedTasks / totalTasks) * 100 : 0;
+        console.log(`Pass rate: ${passRate.toFixed(2)}% (${passedTasks}/${totalTasks} tasks passed)`);
       } else {
         console.error('❌ Tests failed!');
         taskErrors.forEach(error => {

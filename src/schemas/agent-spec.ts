@@ -90,6 +90,7 @@ export const OptimizerSchema = z.object({
   strategy: z.enum(["error_analysis", "completion_analysis"]).default("error_analysis"),
   feedbackPrompt: z.string().optional(),
   evaluationMetrics: z.array(z.string()).optional(),
+  minPassRate: z.number().default(80),
 }).passthrough();
 
 // Main schema for the entire agent specification

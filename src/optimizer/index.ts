@@ -66,10 +66,21 @@ export async function optimizeAgentSpec(
       
       testResults.push(result);
       
-      // If this is the last iteration or all tests passed, we're done
-      if (i === optimizerConfig.iterations - 1 || result.success) {
-        if (result.success) {
-          console.log('All tests passed! Optimization complete.');
+      // Calculate the pass rate based on task states
+      const totalTasks = result.taskResults.length;
+      const passedTasks = result.taskResults.filter(task => task.state === 'pass').length;
+      const passRate = totalTasks > 0 ? (passedTasks / totalTasks) * 100 : 0;
+      
+      console.log(`Pass rate: ${passRate.toFixed(2)}% (${passedTasks}/${totalTasks} tasks)`);
+      
+      // Define the minimum acceptable pass rate (could be configurable)
+      const minPassRate = optimizerConfig.minPassRate || 80;
+      const passRateSuccess = passRate >= minPassRate;
+      
+      // If this is the last iteration or the pass rate is high enough, we're done
+      if (i === optimizerConfig.iterations - 1 || passRateSuccess) {
+        if (passRateSuccess) {
+          console.log(`Pass rate of ${passRate.toFixed(2)}% exceeds minimum threshold of ${minPassRate}%. Optimization complete.`);
         } else {
           console.log('Maximum iterations reached. Optimization complete.');
         }
@@ -128,4 +139,4 @@ export async function optimizeAgentSpec(
     }
     throw error;
   }
-} 
+}
