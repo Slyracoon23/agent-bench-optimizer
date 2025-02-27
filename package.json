@@ -1,6 +1,6 @@
 {
   "name": "@slyracoon23/prompt-spec",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Framework for testing and benchmarking AI agents",
   "type": "module",
   "main": "dist/index.js",
