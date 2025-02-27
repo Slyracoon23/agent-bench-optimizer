@@ -1,5 +1,5 @@
 {
-  "name": "prompt-spec-cli",
+  "name": "@slyracoon23/prompt-spec",
   "version": "0.0.1",
   "description": "Framework for testing and benchmarking AI agents",
   "type": "module",
