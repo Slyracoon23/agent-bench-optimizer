@@ -1,12 +1,12 @@
 {
-  "name": "agent-bench",
+  "name": "prompt-spec",
   "version": "0.1.0",
   "description": "Framework for testing and benchmarking AI agents",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "agent-bench": "bin/cli.js"
+    "prompt-spec": "bin/cli.js"
   },
   "scripts": {
     "build": "tsc && tsc-alias",
@@ -18,7 +18,7 @@
     "examples": "vitest run examples/customer-service.test.ts",
     "lint": "eslint src/**/*.ts",
     "prepublishOnly": "npm run build",
-    "agent-bench": "tsx src/cli/index.ts"
+    "prompt-spec": "tsx src/cli/index.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^1.1.13",

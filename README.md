@@ -1,4 +1,4 @@
-# Agent Bench
+# Prompt Spec
 
 A framework for testing and benchmarking AI agents with automated optimization capabilities.
 
@@ -7,7 +7,7 @@ A framework for testing and benchmarking AI agents with automated optimization c
 
 ## Overview
 
-Agent Bench provides a comprehensive toolkit for defining, testing, and optimizing AI agents. It allows you to:
+Prompt Spec provides a comprehensive toolkit for defining, testing, and optimizing AI agents. It allows you to:
 
 - Define agent specifications in a structured YAML format
 - Run automated tests to evaluate agent performance
@@ -32,20 +32,20 @@ Agent Bench provides a comprehensive toolkit for defining, testing, and optimizi
 ### Install from npm
 
 ```bash
-npm install agent-bench
+npm install prompt-spec
 ```
 
 Or with pnpm:
 
 ```bash
-pnpm add agent-bench
+pnpm add prompt-spec
 ```
 
 ### Install from source
 
 ```bash
-git clone https://github.com/yourusername/agent-bench.git
-cd agent-bench
+git clone https://github.com/yourusername/prompt-spec.git
+cd prompt-spec
 pnpm install
 pnpm build
 ```
@@ -54,23 +54,23 @@ pnpm build
 
 ### Command Line Interface
 
-Agent Bench provides a CLI for running tests, transpiling specifications, and optimizing agents:
+Prompt Spec provides a CLI for running tests, transpiling specifications, and optimizing agents:
 
 ```bash
 # Run tests from a YAML specification
-agent-bench test path/to/spec.yaml
+prompt-spec test path/to/spec.yaml
 
 # Transpile a YAML specification to a test file
-agent-bench transpile path/to/spec.yaml
+prompt-spec transpile path/to/spec.yaml
 
 # Run tests and optimize the agent's system prompt
-agent-bench optimize path/to/spec.yaml
+prompt-spec optimize path/to/spec.yaml
 ```
 
 ### Programmatic API
 
 ```typescript
-import { testSpec, transpileSpec } from 'agent-bench';
+import { testSpec, transpileSpec } from 'prompt-spec';
 
 // Run tests from a YAML specification
 const results = await testSpec('path/to/spec.yaml', {
@@ -86,7 +86,7 @@ const testFilePath = await transpileSpec('path/to/spec.yaml', {
 
 ## Agent Specification Format
 
-Agent Bench uses a declarative YAML format to define agents, tools, and benchmarks:
+Prompt Spec uses a declarative YAML format to define agents, tools, and benchmarks:
 
 ```yaml
 metadata:
@@ -127,7 +127,7 @@ benchmarks:
 Run tests from a YAML specification:
 
 ```bash
-agent-bench test [options] <spec>
+prompt-spec test [options] <spec>
 ```
 
 Options:
@@ -141,7 +141,7 @@ Options:
 Transpile a YAML specification to a test file:
 
 ```bash
-agent-bench transpile [options] <spec>
+prompt-spec transpile [options] <spec>
 ```
 
 Options:
@@ -152,7 +152,7 @@ Options:
 Run tests and optimize the agent's system prompt:
 
 ```bash
-agent-bench optimize [options] <spec>
+prompt-spec optimize [options] <spec>
 ```
 
 Options:

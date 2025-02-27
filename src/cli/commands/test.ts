@@ -7,7 +7,7 @@ import path from 'path';
 import os from 'os';
 
 // Create a dedicated test directory in the project
-const TEST_DIR = path.join(process.cwd(), '.agent-bench-tests');
+const TEST_DIR = path.join(process.cwd(), '.prompt-spec-tests');
 
 export function testCommand(program: Command) {
   program
@@ -34,7 +34,7 @@ export function testCommand(program: Command) {
           ? path.resolve(options.output)
           : options.keep
             ? inputPath.replace(/\.ya?ml$/i, '.test.ts')
-            : path.join(TEST_DIR, `agent-bench-${Date.now()}.test.ts`);
+            : path.join(TEST_DIR, `prompt-spec-${Date.now()}.test.ts`);
         
         console.log(`[DEBUG] Output path: ${outputPath}`);
         console.log(`Transpiling ${inputPath}...`);

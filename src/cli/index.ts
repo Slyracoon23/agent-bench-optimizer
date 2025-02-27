@@ -17,10 +17,10 @@ const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
 const { version } = packageJson;
 
 /**
- * Displays ASCII art banner for agent-bench
+ * Displays ASCII art banner for prompt-spec
  */
 function displayBanner() {
-  const asciiArt = figlet.textSync('agent-bench', {
+  const asciiArt = figlet.textSync('prompt-spec', {
     font: 'Standard',
     horizontalLayout: 'default',
     verticalLayout: 'default',
@@ -46,7 +46,7 @@ export function run() {
   const program = new Command();
 
   program
-    .name('agent-bench')
+    .name('prompt-spec')
     .description('Framework for testing and benchmarking AI agents')
     .version(version);
 

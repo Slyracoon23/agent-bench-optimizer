@@ -76,7 +76,7 @@ export async function testSpec(
     ? path.resolve(options.output)
     : options.keep
       ? path.resolve(specPath).replace(/\.ya?ml$/i, '.test.ts')
-      : path.join(os.tmpdir(), `agent-bench-${Date.now()}.test.ts`);
+      : path.join(os.tmpdir(), `prompt-spec-${Date.now()}.test.ts`);
   
   // Transpile the spec
   await transpileSpec(specPath, { output: outputPath });

@@ -7,7 +7,7 @@ import path from 'path';
 import yaml from 'js-yaml';
 
 // Create a dedicated optimizer directory
-const OPTIMIZER_DIR = path.join(process.cwd(), '.agent-bench-optimizer');
+const OPTIMIZER_DIR = path.join(process.cwd(), '.prompt-spec-optimizer');
 
 interface OptimizationResult {
   originalSpec: AgentSpec;
@@ -45,7 +45,7 @@ export async function optimizeAgentSpec(
   const improvements: string[] = [];
   
   // Generate a test file from the spec
-  const testFilePath = path.join(OPTIMIZER_DIR, `agent-bench-optimize-${Date.now()}.test.ts`);
+  const testFilePath = path.join(OPTIMIZER_DIR, `prompt-spec-optimize-${Date.now()}.test.ts`);
   const testCode = transpileToVitest(currentSpec);
   fs.writeFileSync(testFilePath, testCode, 'utf8');
   

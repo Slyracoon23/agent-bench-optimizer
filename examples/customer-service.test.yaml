@@ -12,12 +12,9 @@ schemas:
         type: boolean
       feedback:
         type: string
-      score:
-        type: integer
     required:
       - passed
       - feedback
-      - score
 
   UserAccountSchema:
     type: object
@@ -125,49 +122,49 @@ benchmarks:
         content: "I have found your account. Do you want to reset via email or phone?"
       - role: "user"
         content: "Email, please."
-    tools:
-      - checkUserAccount
+    # tools:
+    #   - checkUserAccount
     judge:
       evaluationPrompt: |
         Given the agent's response:
         {result}
-
         Evaluate the response based on:
-          - Clarity: Should be understandable.
-          - Security: No sensitive account details exposed.
-          - Helpfulness: Must include clear steps for password reset.
-          - Correct flow: Ensure that the assistant asks for email confirmation and provides reset options.
-        Pass only if all criteria are met.
+          - Clarity: Should be clear and easily understandable by the user.
+          - Security: Must not expose any sensitive account information.
+          - Helpfulness: Should provide specific steps for password reset via email.
+          - Correct flow: Verify the assistant properly confirmed the user's email and offered reset method options.
+          - Professionalism: Should maintain a courteous and supportive tone throughout the interaction.
+          - Specific content: Must include the phrase "A password reset link has been sent to your email" or similar confirmation language.
+        Pass only if all criteria are met with a high standard of customer service.
       evaluationSchema: "EvaluationSchema"
       expected:
         passed: true
-        score: { min: 80 }
 
-  - name: "Weather Inquiry"
-    seed: 11111
-    messages:
-      - role: "user"
-        content: "What's the weather like in San Francisco?"
-      - role: "assistant"
-        content: "Let me check that for you."
-      - role: "user"
-        content: "Also, can you tell me if it's expected to rain tomorrow?"
-      - role: "assistant"
-        content: "I'll look up both for you. Just a moment."
-    tools:
-      - weather
-    judge:
-      evaluationPrompt: |
-        Given the agent's response:
-        {result}
+  # - name: "Weather Inquiry"
+  #   seed: 11111
+  #   messages:
+  #     - role: "user"
+  #       content: "What's the weather like in San Francisco?"
+  #     - role: "assistant"
+  #       content: "Let me check that for you."
+  #     - role: "user"
+  #       content: "Also, can you tell me if it's expected to rain tomorrow?"
+  #     - role: "assistant"
+  #       content: "I'll look up both for you. Just a moment."
+  #   tools:
+  #     - weather
+  #   judge:
+  #     evaluationPrompt: |
+  #       Given the agent's response:
+  #       {result}
 
-        Evaluate the response based on:
-          - Clarity: Should be easy to understand.
-          - Accuracy: Weather info must be correct.
-          - Helpfulness: Should provide current and forecasted conditions.
-          - Correct flow: The agent should acknowledge both the current weather and the user's follow-up question.
-        Pass only if all criteria are met.
-      evaluationSchema: "EvaluationSchema"
-      expected:
-        passed: true
-        score: { min: 80 }
+  #       Evaluate the response based on:
+  #         - Clarity: Should be easy to understand.
+  #         - Accuracy: Weather info must be correct.
+  #         - Helpfulness: Should provide current and forecasted conditions.
+  #         - Correct flow: The agent should acknowledge both the current weather and the user's follow-up question.
+  #       Pass only if all criteria are met.
+  #     evaluationSchema: "EvaluationSchema"
+  #     expected:
+  #       passed: true
+  #       score: { min: 80 }

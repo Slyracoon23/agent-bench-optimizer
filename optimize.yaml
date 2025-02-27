@@ -1,0 +1,170 @@
+metadata:
+  name: Customer Service Agent with Multi-Turn Conversations
+  version: '1.5'
+  description: >-
+    A flexible customer service agent configuration with multi-turn
+    conversations, tool selection control, max step limitation, explicit schema
+    definitions, and data generators.
+  date: '2025-02-23'
+schemas:
+  EvaluationSchema:
+    type: object
+    properties:
+      passed:
+        type: boolean
+      feedback:
+        type: string
+    required:
+      - passed
+      - feedback
+  UserAccountSchema:
+    type: object
+    properties:
+      exists:
+        type: boolean
+      lastLogin:
+        type: string
+      status:
+        type: string
+    required:
+      - exists
+      - lastLogin
+      - status
+  WeatherSchema:
+    type: object
+    properties:
+      location:
+        type: string
+      temperature:
+        type: number
+      conditions:
+        type: string
+    required:
+      - location
+      - temperature
+      - conditions
+generators:
+  userLastLogin:
+    type: date
+    range:
+      start: '-7 days'
+      end: now
+  userStatus:
+    type: list
+    values:
+      - active
+      - suspended
+      - pending
+  orderId:
+    type: pattern
+    format: ORD-{{alphanumeric.length(8)}}
+  orderStatus:
+    type: list
+    values:
+      - pending
+      - shipped
+      - delivered
+      - returned
+  weatherTemperature:
+    type: number
+    range:
+      min: 32
+      max: 100
+  weatherCondition:
+    type: list
+    values:
+      - sunny
+      - partly cloudy
+      - cloudy
+      - rainy
+      - stormy
+agent:
+  model: gpt-4o-mini
+  systemPrompt: >-
+    You are a helpful and professional customer service agent. Your role is to
+    assist customers with their inquiries and issues while maintaining a high
+    standard of service. Your responses should be:
+
+
+    1. Polite and empathetic: Always address the customer with respect and
+    understanding.
+
+    2. Clear and concise: Provide information that is easy to understand and
+    direct.
+
+    3. Focused on resolving the customer's issue: Prioritize solving the problem
+    the customer is facing.
+
+    4. Security-conscious: Ensure that no sensitive account information is
+    exposed.
+
+    5. Confirmatory: Include confirmation language when applicable, such as "A
+    password reset link has been sent to your email."
+
+    6. Example of a password reset response: "To reset your password, please
+    follow these steps: 1. Go to the login page. 2. Click 'Forgot Password?'. 3.
+    Enter your email and submit. Check your email for the reset link. If you
+    don't see it, check your spam folder. A password reset link has been sent to
+    your email. Follow the instructions in the email to create a new password.
+    Let me know if you need further assistance."
+  toolChoice: auto
+  maxSteps: 3
+tools:
+  checkUserAccount:
+    description: Check user account details
+    inputSchema:
+      type: object
+      properties:
+        userId:
+          type: string
+    outputSchema: UserAccountSchema
+    generate:
+      template:
+        exists: true
+        lastLogin: '{{generators.userLastLogin}}'
+        status: '{{generators.userStatus}}'
+  weather:
+    description: Get weather information for a location
+    inputSchema:
+      type: object
+      properties:
+        location:
+          type: string
+    outputSchema: WeatherSchema
+    generate:
+      template:
+        location: '{{input.location}}'
+        temperature: '{{generators.weatherTemperature}}'
+        conditions: '{{generators.weatherCondition}}'
+benchmarks:
+  - name: Password Reset Inquiry
+    seed: 12345
+    messages:
+      - role: user
+        content: How can I reset my password?
+      - role: assistant
+        content: I can help with that! Can you confirm your email?
+      - role: user
+        content: user@example.com
+      - role: assistant
+        content: I have found your account. Do you want to reset via email or phone?
+      - role: user
+        content: Email, please.
+    judge:
+      evaluationPrompt: >
+        Given the agent's response:
+
+        {result}
+
+        Evaluate the response based on:
+          - Clarity: Should be clear and easily understandable by the user.
+          - Security: Must not expose any sensitive account information.
+          - Helpfulness: Should provide specific steps for password reset via email.
+          - Correct flow: Verify the assistant properly confirmed the user's email and offered reset method options.
+          - Professionalism: Should maintain a courteous and supportive tone throughout the interaction.
+          - Specific content: Must include the phrase "A password reset link has been sent to your email" or similar confirmation language.
+        Pass only if all criteria are met with a high standard of customer
+        service.
+      evaluationSchema: EvaluationSchema
+      expected:
+        passed: true
