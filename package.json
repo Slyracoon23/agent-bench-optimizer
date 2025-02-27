@@ -8,6 +8,12 @@
   "bin": {
     "prompt-spec": "bin/cli.js"
   },
+  "files": [
+    "bin/",
+    "dist/",
+    "LICENSE",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc && tsc-alias",
     "test": "vitest run",
@@ -55,11 +61,20 @@
     "testing",
     "benchmarking",
     "agents",
-    "llm"
+    "llm",
+    "prompt-engineering"
   ],
   "engines": {
     "node": ">=18"
   },
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Slyracoon23/prompt-spec.git"
+  },
+  "homepage": "https://github.com/Slyracoon23/prompt-spec",
+  "bugs": {
+    "url": "https://github.com/Slyracoon23/prompt-spec/issues"
+  }
 }

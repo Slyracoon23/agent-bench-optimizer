@@ -1,0 +1,26 @@
+# Source files
+src/
+
+# Test files
+**/*.test.ts
+**/*.spec.ts
+vitest.config.ts
+.prompt-spec-tests/
+.prompt-spec-optimizer/
+
+# Config files
+.eslintrc
+.prettierrc
+tsconfig.json
+
+# Editor directories
+.vscode/
+.idea/
+
+# Build artifacts
+coverage/
+.nyc_output/
+
+# Misc
+.github/
+examples/ 

@@ -32,22 +32,30 @@ Prompt Spec provides a comprehensive toolkit for defining, testing, and optimizi
 ### Install from npm
 
 ```bash
-npm install prompt-spec
+# Using npm
+npm install -g prompt-spec
+
+# Using pnpm (recommended)
+pnpm add -g prompt-spec
 ```
 
-Or with pnpm:
+### Set up OpenAI API key
+
+Prompt Spec requires an OpenAI API key to function. You can set it as an environment variable:
 
 ```bash
-pnpm add prompt-spec
+# Set for current session
+export OPENAI_API_KEY=your_api_key_here
+
+# Or add to your .bashrc/.zshrc for persistence
+echo 'export OPENAI_API_KEY=your_api_key_here' >> ~/.bashrc
+source ~/.bashrc
 ```
 
-### Install from source
+Alternatively, you can create a `.env` file in your project root:
 
-```bash
-git clone https://github.com/yourusername/prompt-spec.git
-cd prompt-spec
-pnpm install
-pnpm build
+```
+OPENAI_API_KEY=your_api_key_here
 ```
 
 ## Usage
@@ -70,7 +78,7 @@ prompt-spec optimize path/to/spec.yaml
 ### Programmatic API
 
 ```typescript
-import { testSpec, transpileSpec } from 'prompt-spec';
+import { testSpec, transpileSpec, optimizeSpec } from 'prompt-spec';
 
 // Run tests from a YAML specification
 const results = await testSpec('path/to/spec.yaml', {
@@ -81,6 +89,12 @@ const results = await testSpec('path/to/spec.yaml', {
 // Transpile a YAML specification to a test file
 const testFilePath = await transpileSpec('path/to/spec.yaml', {
   output: 'path/to/output.test.ts'
+});
+
+// Optimize an agent's system prompt based on test results
+const optimizedSpec = await optimizeSpec('path/to/spec.yaml', {
+  iterations: 3,
+  output: 'path/to/optimized-spec.yaml'
 });
 ```
 
@@ -161,23 +175,53 @@ Options:
 
 ## Examples
 
-The `examples/` directory contains sample agent specifications and test files:
+Check out these examples to get started:
 
-- `agent-spec.yaml`: A basic agent specification
-- `customer-service.test.yaml`: A customer service agent test suite
-- `customer-service.test.ts`: A transpiled test file
+```bash
+# Create a basic agent spec
+cat > agent-spec.yaml << EOF
+metadata:
+  name: "Hello World Agent"
+  version: "1.0"
+  description: "A simple hello world agent"
+
+agent:
+  model: gpt-4o-mini
+  systemPrompt: |
+    You are a helpful assistant.
+  maxSteps: 1
+
+benchmarks:
+  - name: "Basic Test"
+    messages:
+      - role: "user"
+        content: "Say hello world"
+    expectedOutputs:
+      - pattern: "hello world"
+        caseSensitive: false
+EOF
+
+# Run the test
+prompt-spec test agent-spec.yaml
+```
 
 ## Development
 
+To contribute to Prompt Spec:
+
 ```bash
+# Clone the repository
+git clone https://github.com/Slyracoon23/prompt-spec.git
+cd prompt-spec
+
+# Install dependencies
+pnpm install
+
 # Build the project
 pnpm build
 
 # Run tests
 pnpm test
-
-# Run tests in watch mode
-pnpm test:watch
 
 # Run examples
 pnpm examples
